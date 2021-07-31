@@ -2,7 +2,7 @@
  * xor linked list
  */
 #ifndef __XORLIST_H__
-#define __XORLIST_H_
+#define __XORLIST_H__
 
 #include <assert.h>
 
@@ -32,10 +32,18 @@ typedef struct _xor_list_struct {
 #define _VA(a) ((unsigned long)(a))
 #define compress_addr(a, b) ((xor_node_t *)(_VA(a) ^ _VA(b)))
 
-static inline xor_node_t *address_of(xor_node_t *decode, xor_node_t *node)
+/*
+ * Get the compressed address stored at node->cmp with neighbor.
+ * The value you want to decompress must passed by node->cmp.
+ * For example:
+ *  A -> B -> C -> D
+ * Want to get the address of D by B node and C node wil be like
+ *  D = address_of(B, C->cmp) or D = address_of(C->cmp, B)
+ */
+static inline xor_node_t *address_of(xor_node_t *n1, xor_node_t *n2)
 {
     assert(decode != NULL && node != NULL);
-    return compress_addr(decode, node);
+    return compress_addr(n1, n2);
 }
 
 #define container_of(ptr, type, member)                                        \
@@ -134,11 +142,31 @@ alloc_fail:
     return ENOMEM;
 }
 
+/*
+ * nn -> n -> target -> an -> ana
+ * ana <- an <- target <- n <- nn
+ */
+int xorlist_del(xor_list_t *list, xor_node_t *n, xor_node_t *target,
+                int (*delete_func)(xor_node_t *))
+{
+    xor_node_t *nn, *an, *ana;
+
+    assert(list != NULL && n != NULL && target != NULL && delete_func != NULL);
+    assert(list->head != target && list->tail != target);
+    nn = address_of(target, n->cmp);
+    an = address_of(n, target->cmp);
+    ana = address_of(target, an->cmp);
+    n->cmp = compress_addr(nn, an);
+    an->cmp = compress_addr(n, ana);
+    delete_func(target);
+
+    return 0;
+}
+
 int xorlist_destroy(xor_list_t *list, int (*delete_func)(xor_node_t *))
 {
     xor_node_t *real_prev, *node, *real_next;
     xor_node_t *tmp;
-    int cnt = 0;
 
     assert(delete_func != NULL);
 
@@ -161,4 +189,4 @@ int xorlist_destroy(xor_list_t *list, int (*delete_func)(xor_node_t *))
     return 0;
 }
 
-#endif /* __XORLIST_H__*/
+#endif /* __XORLIST_H__ */
