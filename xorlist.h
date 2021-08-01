@@ -42,7 +42,7 @@ typedef struct _xor_list_struct {
  */
 static inline xor_node_t *address_of(xor_node_t *n1, xor_node_t *n2)
 {
-    assert(decode != NULL && node != NULL);
+    assert(n1 != NULL && n2 != NULL);
     return compress_addr(n1, n2);
 }
 
