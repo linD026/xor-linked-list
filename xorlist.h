@@ -159,6 +159,7 @@ int xorlist_del(xor_list_t *list, xor_node_t *n, xor_node_t *target,
     n->cmp = compress_addr(nn, an);
     an->cmp = compress_addr(n, ana);
     delete_func(target);
+	list->cnt--;
 
     return 0;
 }
