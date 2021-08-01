@@ -123,7 +123,7 @@ int xorlist_add(xor_list_t *list, xor_node_t *n)
 
     if (!n) {
         error_null("add node n is");
-        goto alloc_fail;
+        goto null_ptr;
     }
     real_prev = list->head;
     node = real_prev->cmp;
@@ -138,7 +138,7 @@ int xorlist_add(xor_list_t *list, xor_node_t *n)
 
     return 0;
 
-alloc_fail:
+null_ptr:
     return ENOMEM;
 }
 
@@ -159,7 +159,7 @@ int xorlist_del(xor_list_t *list, xor_node_t *n, xor_node_t *target,
     n->cmp = compress_addr(nn, an);
     an->cmp = compress_addr(n, ana);
     delete_func(target);
-	list->cnt--;
+    list->cnt--;
 
     return 0;
 }
