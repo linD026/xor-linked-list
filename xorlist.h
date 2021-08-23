@@ -24,8 +24,8 @@ typedef struct _xorlist_node {
 } xor_node_t;
 
 typedef struct _xor_list_struct {
-    xor_node_t *head;
-    xor_node_t *tail;
+    xor_node_t head;
+    xor_node_t tail;
     uint32_t cnt;
 } xor_list_t;
 
@@ -42,7 +42,7 @@ typedef struct _xor_list_struct {
  */
 static inline xor_node_t *address_of(xor_node_t *n1, xor_node_t *n2)
 {
-    assert(n1 != NULL && n2 != NULL);
+    assert(n1 && n2);
     return compress_addr(n1, n2);
 }
 
@@ -53,19 +53,19 @@ static inline xor_node_t *address_of(xor_node_t *n1, xor_node_t *n2)
     })
 
 #define xorlist_for_each(node, rp, rn, list)                                   \
-    for (rp = list->head, node = rp->cmp; node != list->tail;                  \
+    for (rp = &(list)->head, node = rp->cmp; node != &(list)->tail;            \
          rn = address_of(rp, node->cmp), rp = node, node = rn)
 
 #define xorlist_for_each_prev(node, rp, rn, list)                              \
-    for (rp = list->tail, node = rp->cmp; node != list->head;                  \
+    for (rp = &(list)->tail, node = rp->cmp; node != &(list)->head;            \
          rn = address_of(rp, node->cmp), rp = node, node = rn)
 
 #define xorlist_for_each_from(node, pos1, pos2, rp, rn, list)                  \
-    for (rp = pos2, node = pos1; node != list->tail;                           \
+    for (rp = pos2, node = pos1; node != &(list)->tail;                        \
          rn = address_of(rp, node->cmp), rp = node, node = rn)
 
 #define xorlist_for_each_from_prev(node, pos1, pos2, rp, rn, list)             \
-    for (rp = pos1, node = pos2; node != list->head;                           \
+    for (rp = pos1, node = pos2; node != &(list)->head;                        \
          rn = address_of(rp, node->cmp), rp = node, node = rn)
 
 /*
@@ -79,43 +79,23 @@ static inline xor_node_t *address_of(xor_node_t *n1, xor_node_t *n2)
 
 static inline xor_node_t *xornode_init(xor_node_t *n)
 {
-    assert(n != NULL);
+    assert(n);
     n->cmp = NULL;
 
     return n;
 }
 
-xor_list_t *xorlist_new(void)
-{
-    xor_list_t *n;
+#define XORNODE_INIT(n)                                                        \
+    do {                                                                       \
+        (n).cmp = NULL;                                                        \
+    } while (0)
 
-    n = (xor_list_t *)malloc(sizeof(xor_list_t));
-    if (!n) {
-        error_alloc("xorlist");
-        goto alloc_fail;
-    }
-    n->head = (xor_node_t *)malloc(sizeof(xor_node_t));
-    if (!n->head) {
-        free(n);
-        error_alloc("xornode head");
-        goto alloc_fail;
-    }
-    n->tail = (xor_node_t *)malloc(sizeof(xor_node_t));
-    if (!n->tail) {
-        free(n->head);
-        free(n);
-        error_alloc("xornode tail");
-        goto alloc_fail;
-    }
-    n->head->cmp = n->tail;
-    n->tail->cmp = n->head;
-    n->cnt = 0;
-
-    return n;
-
-alloc_fail:
-    return NULL;
-}
+#define XORLIST_INIT(h)                                                        \
+    do {                                                                       \
+        (h).head.cmp = &(h).tail;                                              \
+        (h).tail.cmp = &(h).head;                                              \
+        (h).cnt = 0;                                                           \
+    } while (0)
 
 int xorlist_add(xor_list_t *list, xor_node_t *n)
 {
@@ -125,10 +105,10 @@ int xorlist_add(xor_list_t *list, xor_node_t *n)
         error_null("add node n is");
         goto null_ptr;
     }
-    real_prev = list->head;
+    real_prev = &list->head;
     node = real_prev->cmp;
-    if (node == list->tail)
-        real_next = list->tail;
+    if (node == &list->tail)
+        real_next = &list->tail;
     else
         real_next = node;
     real_prev->cmp = n;
@@ -151,8 +131,8 @@ int xorlist_del(xor_list_t *list, xor_node_t *n, xor_node_t *target,
 {
     xor_node_t *nn, *an, *ana;
 
-    assert(list != NULL && n != NULL && target != NULL && delete_func != NULL);
-    assert(list->head != target && list->tail != target);
+    assert(list && n && target && delete_func);
+    assert(&list->head != target && &list->tail != target);
     nn = address_of(target, n->cmp);
     an = address_of(n, target->cmp);
     ana = address_of(target, an->cmp);
@@ -169,23 +149,24 @@ int xorlist_destroy(xor_list_t *list, int (*delete_func)(xor_node_t *))
     xor_node_t *real_prev, *node, *real_next;
     xor_node_t *tmp;
 
-    assert(delete_func != NULL);
+    assert(delete_func);
 
-    real_prev = list->head;
+    real_prev = &list->head;
     node = real_prev->cmp;
-    while (node != list->tail) {
+    real_next = address_of(real_prev, node->cmp);
+    tmp = real_prev;
+    real_prev = node;
+    node = real_next;
+
+    while (node != &list->tail) {
         real_next = address_of(real_prev, node->cmp);
         tmp = real_prev;
         real_prev = node;
         node = real_next;
 
-        if (tmp == list->head)
-            free(tmp);
-        else if (delete_func(tmp) != 0)
+        if (delete_func(tmp) != 0)
             perror("delete function failed");
     }
-    free(list->tail);
-    free(list);
 
     return 0;
 }

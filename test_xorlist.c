@@ -18,14 +18,16 @@ xorlist_delete_prototype(test_delete, _node)
 
 int main(void)
 {
-    xor_list_t *list = xorlist_new();
+    xor_list_t list;
     xor_node_t *p1;
     xor_node_t *p2;
-    for (int i = 0; i < 10; i++) {
+
+    XORLIST_INIT(list);
+    for (int i = 0; i < 1000; i++) {
         struct test_node *new = malloc(sizeof(struct test_node));
         xornode_init(&new->xornode);
         new->value = i;
-        xorlist_add(list, &new->xornode);
+        xorlist_add(&list, &new->xornode);
         if (i == 5)
             p1 = &new->xornode;
         if (i == 6)
@@ -36,7 +38,7 @@ int main(void)
     struct test_node *tmp;
     int i = 0;
     printf("xorlist_for_each test\n");
-    xorlist_for_each(node, real_prev, real_next, list)
+    xorlist_for_each(node, real_prev, real_next, &list)
     {
         printf("node [%d] %d\n", i++,
                container_of(node, struct test_node, xornode)->value);
@@ -44,7 +46,7 @@ int main(void)
 
     i = 0;
     printf("xorlist_for_from test\n");
-    xorlist_for_each_from(node, p1, p2, real_prev, real_next, list)
+    xorlist_for_each_from(node, p1, p2, real_prev, real_next, &list)
     {
         printf("node %d\n",
                container_of(node, struct test_node, xornode)->value);
@@ -52,7 +54,7 @@ int main(void)
 
     i = 0;
     printf("xorlist_for_each_from_prev test\n");
-    xorlist_for_each_from_prev(node, p1, p2, real_prev, real_next, list)
+    xorlist_for_each_from_prev(node, p1, p2, real_prev, real_next, &list)
     {
         printf("node [%d] %d\n", i++,
                container_of(node, struct test_node, xornode)->value);
@@ -60,22 +62,22 @@ int main(void)
 
     i = 0;
     printf("xorlist_for_each_prev test\n");
-    xorlist_for_each_prev(node, real_prev, real_next, list)
+    xorlist_for_each_prev(node, real_prev, real_next, &list)
     {
         printf("node [%d] %d\n", i++,
                container_of(node, struct test_node, xornode)->value);
     }
 
     printf("xorlist_del test\n");
-    xorlist_del(list, p2, p1, xorlist_delete_call(test_delete));
+    xorlist_del(&list, p2, p1, xorlist_delete_call(test_delete));
     i = 0;
-    xorlist_for_each(node, real_prev, real_next, list)
+    xorlist_for_each(node, real_prev, real_next, &list)
     {
         printf("node [%d] %d\n", i++,
                container_of(node, struct test_node, xornode)->value);
     }
 
-    xorlist_destroy(list, xorlist_delete_call(test_delete));
+    xorlist_destroy(&list, xorlist_delete_call(test_delete));
 
     return 0;
 }
