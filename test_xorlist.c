@@ -35,7 +35,6 @@ int main(void)
     }
 
     xor_node_t *real_prev, *real_next, *node;
-    struct test_node *tmp;
     int i = 0;
     printf("xorlist_for_each test\n");
     xorlist_for_each(node, real_prev, real_next, &list)
